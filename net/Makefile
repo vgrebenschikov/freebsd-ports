@@ -1677,6 +1677,7 @@
     SUBDIR += wifibox
     SUBDIR += wifibox-alpine
     SUBDIR += wifibox-core
+    SUBDIR += wireguard-amnezia-kmod
     SUBDIR += wireguard-go
     SUBDIR += wireguard-tools
     SUBDIR += wireproxy
