@@ -18,6 +18,7 @@
     SUBDIR += alligator
     SUBDIR += aluminum
     SUBDIR += amneziawg-kmod
+    SUBDIR += amneziawg-tools
     SUBDIR += amqpcat
     SUBDIR += aoe
     SUBDIR += apache-commons-net
