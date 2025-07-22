@@ -1,11 +1,11 @@
-PORTNAME=	wireguard-amnezia
-PORTVERSION=	1.0.4
+PORTNAME=	amneziawg
+PORTVERSION=	1.0.5
 DISTVERSIONPREFIX=	v
 CATEGORIES=	net net-vpn
 PKGNAMESUFFIX=	-kmod
 
 MAINTAINER=	vova@zote.me
-COMMENT=	WireGuard implementation with Amnezia support
+COMMENT=	AmneziaWG FreeBSD kernel module implementation
 WWW=		https://github.com/vgrebenschikov/wireguard-amnezia-kmod
 
 LICENSE=	MIT
@@ -16,6 +16,6 @@ USE_GITHUB=	yes
 GH_ACCOUNT=	vgrebenschikov
 GH_PROJECT=	wireguard-amnezia-kmod
 
-PLIST_FILES=	${KMODDIR}/if_wg.ko
+PLIST_FILES=	${KMODDIR}/if_awg.ko
 
 .include <bsd.port.mk>

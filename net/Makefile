@@ -17,6 +17,7 @@
     SUBDIR += akonadi-search
     SUBDIR += alligator
     SUBDIR += aluminum
+    SUBDIR += amneziawg-kmod
     SUBDIR += amqpcat
     SUBDIR += aoe
     SUBDIR += apache-commons-net
@@ -1677,7 +1678,6 @@
     SUBDIR += wifibox
     SUBDIR += wifibox-alpine
     SUBDIR += wifibox-core
-    SUBDIR += wireguard-amnezia-kmod
     SUBDIR += wireguard-go
     SUBDIR += wireguard-tools
     SUBDIR += wireproxy
