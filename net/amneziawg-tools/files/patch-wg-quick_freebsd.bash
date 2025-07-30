@@ -56,7 +56,7 @@
  			SaveConfig) read_bool SAVE_CONFIG "$value"; continue ;;
 +			UserLand) read_bool USERLAND "$value"; continue ;;
 +			Monitor) read_bool MONITOR "$value"; continue ;;
-+            TrackDNSChanges) TRACK_DNS_CHANGES="$value"; continue ;;
++			TrackDNSChanges) TRACK_DNS_CHANGES="$value"; continue ;;
  			esac
  			case "$key" in
 +			
