@@ -191,7 +191,7 @@
 +			sleep $TRACK_DNS_CHANGES &
 +			wait $!
 +
-+			$cmd awg showconf "$INTERFACE" 2> /dev/null | wg_endpoints | \
++			awg showconf "$INTERFACE" 2> /dev/null | wg_endpoints | \
 +			while read -r pk peer_ip port; do
 +				peer_host="${ENDPOINTS[$pk]}"
 +				if [[ -n "$peer_host" ]]; then
@@ -204,7 +204,7 @@
 +						logger -t awg-quick -p local0.notice \
 +							"$INTERFACE/$pk host $peer_host:" \
 +							"IP missmatch: $host_ip != $peer_ip, configuring endpoint" || true
-+						$cmd awg set "$INTERFACE" peer "$pk" endpoint "$peer_host:$port" || true
++						awg set "$INTERFACE" peer "$pk" endpoint "$peer_host:$port" || true
 +					fi
 +				fi
 +			done
