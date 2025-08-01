@@ -13,5 +13,3 @@ regular internet traffic.
 This package provides the FreeBSD kernel module (if_amn.ko)
 implementation for Amnezia VPN, enabling kernel-level support for the
 protocol.
-
-WWW: https://docs.amnezia.org/documentation/amnezia-wg
