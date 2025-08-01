@@ -17,8 +17,8 @@
     SUBDIR += akonadi-search
     SUBDIR += alligator
     SUBDIR += aluminum
-    SUBDIR += amneziawg-kmod
-    SUBDIR += amneziawg-tools
+    SUBDIR += amnezia-kmod
+    SUBDIR += amnezia-tools
     SUBDIR += amqpcat
     SUBDIR += aoe
     SUBDIR += apache-commons-net
