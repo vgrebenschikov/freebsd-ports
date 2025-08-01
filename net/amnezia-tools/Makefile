@@ -31,7 +31,7 @@ post-patch:
 		${WRKSRC}/completion/wg-quick.bash-completion
 
 post-install:
-	@${MKDIR} ${STAGEDIR}${PREFIX}/etc/amnezia
+	@${RMDIR} ${STAGEDIR}${PREFIX}/etc/amnezia/amneziawg
 	${STRIP_CMD} ${STAGEDIR}${PREFIX}/bin/awg
 
 .include <bsd.port.mk>
