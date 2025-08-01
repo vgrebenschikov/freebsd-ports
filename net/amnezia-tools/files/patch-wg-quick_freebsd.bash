@@ -87,7 +87,7 @@
  	local ret rc
 -	local cmd="ifconfig wg create name "$INTERFACE""
 -	if [[ $IS_ASESCURITY_ON == 1 ]]; then
-+	local cmd="ifconfig awg create name "$INTERFACE""
++	local cmd="ifconfig amn create name "$INTERFACE""
 +	if [[ $USERLAND == 1 ]]; then
  		cmd="amneziawg-go "$INTERFACE"";
  	fi
