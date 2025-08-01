@@ -12,7 +12,7 @@
  static int kernel_get_wireguard_interfaces(struct string_list *list)
  {
 -	struct ifgroupreq ifgr = { .ifgr_name = "wg" };
-+	struct ifgroupreq ifgr = { .ifgr_name = "awg" };
++	struct ifgroupreq ifgr = { .ifgr_name = "amn" };
  	struct ifg_req *ifg;
  	int s = get_dgram_socket(), ret = 0;
  
