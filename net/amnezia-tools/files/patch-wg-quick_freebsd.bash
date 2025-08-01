@@ -292,3 +292,25 @@
  	save_config
  }
  
+@@ -473,6 +591,10 @@ cmd_strip() {
+ 	echo "$WG_CONFIG"
+ }
+ 
++cmd_reload() {
++  cmd awg setconf "$INTERFACE" <(cmd_strip)
++}
++
+ # ~~ function override insertion point ~~
+ 
+ make_temp
+@@ -496,6 +618,10 @@ elif [[ $# -eq 2 && $1 == strip ]]; then
+ 	auto_su
+ 	parse_options "$2"
+ 	cmd_strip
++elif [[ $# -eq 2 && $1 == reload ]]; then
++	auto_su
++	parse_options "$2"
++	cmd_reload
+ else
+ 	cmd_usage
+ 	exit 1
