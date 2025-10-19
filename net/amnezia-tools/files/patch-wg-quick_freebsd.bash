@@ -1,4 +1,4 @@
---- wg-quick/freebsd.bash.orig	2025-09-16 20:30:13 UTC
+--- wg-quick/freebsd.bash.orig	2025-10-19 17:44:56 UTC
 +++ wg-quick/freebsd.bash
 @@ -25,11 +25,20 @@ CONFIG_FILE=""
  POST_DOWN=( )
@@ -15,7 +15,7 @@
  
 +
 +declare -A ROUTES
-+declare -A ENDPOINTS
++declare -A ENDPOINTS_MAP
 +
 +
  cmd() {
@@ -74,7 +74,7 @@
 +			Endpoint)
 +				endpoint_host="${value%%:*}"
 +				if ! [[ "$endpoint_host" =~ ^[0-9]+ ]]; then
-+					ENDPOINTS["$last_public_key"]="$endpoint_host"
++					ENDPOINTS_MAP["$last_public_key"]="$endpoint_host"
 +				fi
 +				;;
 +			esac
@@ -192,7 +192,7 @@
 +
 +			$cmd awg showconf "$INTERFACE" 2> /dev/null | wg_endpoints | \
 +			while read -r pk peer_ip port; do
-+				peer_host="${ENDPOINTS[$pk]}"
++				peer_host="${ENDPOINTS_MAP[$pk]}"
 +				if [[ -n "$peer_host" ]]; then
 +					host_ip=$(host "$peer_host" 2>/dev/null | awk '/has address/ { print $4; exit; }') || continue
 +
