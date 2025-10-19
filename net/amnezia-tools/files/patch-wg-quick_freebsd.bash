@@ -1,4 +1,4 @@
---- wg-quick/freebsd.bash.orig	2025-10-19 17:44:56 UTC
+--- wg-quick/freebsd.bash.orig	2025-10-19 18:21:50 UTC
 +++ wg-quick/freebsd.bash
 @@ -25,11 +25,20 @@ CONFIG_FILE=""
  POST_DOWN=( )
@@ -81,7 +81,7 @@
  		fi
  		WG_CONFIG+="$line"$'\n'
  	done < "$CONFIG_FILE"
-@@ -129,12 +154,15 @@ add_if() {
+@@ -129,19 +154,22 @@ add_if() {
  
  add_if() {
  	local ret rc
@@ -101,6 +101,14 @@
  	fi
  	rc=$?
  	if [[ $ret == *"ifconfig: ioctl SIOCSIFNAME (set name): File exists"* ]]; then
+ 		echo "$ret" >&3
+ 		return $rc
+ 	fi
+-	echo "[!] Missing WireGuard kernel support ($ret). Falling back to slow userspace implementation." >&3
++	echo "[!] Missing Amnezia kernel support ($ret). Falling back to slow userspace implementation." >&3
+ 	cmd "${WG_QUICK_USERSPACE_IMPLEMENTATION:-amneziawg-go}" "$INTERFACE"
+ }
+ 
 @@ -209,7 +237,7 @@ set_mtu() {
  		[[ ${BASH_REMATCH[1]} == *:* ]] && family=inet6
  		output="$(route -n get "-$family" "${BASH_REMATCH[1]}" || true)"
@@ -235,7 +243,21 @@
  	trap 'rm -f "$CONFIG_FILE.tmp"; clean_temp; exit' INT TERM EXIT
  	echo "${current_config/\[Interface\]$'\n'/$new_config}" > "$CONFIG_FILE.tmp" || die "Could not write configuration file"
  	sync "$CONFIG_FILE.tmp"
-@@ -433,6 +531,20 @@ cmd_usage() {
+@@ -412,7 +510,7 @@ cmd_usage() {
+ 	  followed by \`.conf'. Otherwise, INTERFACE is an interface name, with
+ 	  configuration found at:
+ 	  ${CONFIG_SEARCH_PATHS[@]/%//INTERFACE.conf}.
+-	  It is to be readable by wg(8)'s \`setconf' sub-command, with the exception
++	  It is to be readable by awg(8)'s \`setconf' sub-command, with the exception
+ 	  of the following additions to the [Interface] section, which are handled
+ 	  by $PROGRAM:
+ 
+@@ -429,10 +527,24 @@ cmd_usage() {
+ 	  - SaveConfig: if set to \`true', the configuration is saved from the current
+ 	    state of the interface upon shutdown.
+ 
+-	See wg-quick(8) for more info and examples.
++	See awg-quick(8) for more info and examples.
  	_EOF
  }
  
@@ -273,7 +295,7 @@
  
  cmd_down() {
 -	[[ " $(wg show interfaces) " == *" $INTERFACE "* ]] || die "\`$INTERFACE' is not a WireGuard interface"
-+	[[ " $(awg show interfaces) " == *" $INTERFACE "* ]] || die "\`$INTERFACE' is not a WireGuard interface"
++	[[ " $(awg show interfaces) " == *" $INTERFACE "* ]] || die "\`$INTERFACE' is not a Amnezia interface"
  	execute_hooks "${PRE_DOWN[@]}"
  	[[ $SAVE_CONFIG -eq 0 ]] || save_config
  	del_if
@@ -287,7 +309,7 @@
  
  cmd_save() {
 -	[[ " $(wg show interfaces) " == *" $INTERFACE "* ]] || die "\`$INTERFACE' is not a WireGuard interface"
-+	[[ " $(awg show interfaces) " == *" $INTERFACE "* ]] || die "\`$INTERFACE' is not a WireGuard interface"
++	[[ " $(awg show interfaces) " == *" $INTERFACE "* ]] || die "\`$INTERFACE' is not a Amnezia interface"
  	save_config
  }
  
