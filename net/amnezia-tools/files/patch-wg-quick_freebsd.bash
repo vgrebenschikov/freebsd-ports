@@ -1,4 +1,4 @@
---- wg-quick/freebsd.bash.orig	2025-10-19 18:21:50 UTC
+--- wg-quick/freebsd.bash.orig	2025-10-24 19:17:23 UTC
 +++ wg-quick/freebsd.bash
 @@ -25,11 +25,20 @@ CONFIG_FILE=""
  POST_DOWN=( )
@@ -109,15 +109,63 @@
  	cmd "${WG_QUICK_USERSPACE_IMPLEMENTATION:-amneziawg-go}" "$INTERFACE"
  }
  
-@@ -209,7 +237,7 @@ set_mtu() {
+@@ -174,9 +202,9 @@ del_if() {
+ 	if [[ -S /var/run/amneziawg/$INTERFACE.sock ]]; then
+ 		cmd rm -f "/var/run/amneziawg/$INTERFACE.sock"
+ 	else
+-		cmd ifconfig "$INTERFACE" destroy
++		cmd ifconfig -n "$INTERFACE" destroy
+ 	fi
+-	while ifconfig "$INTERFACE" >/dev/null 2>&1; do
++	while ifconfig -n "$INTERFACE" >/dev/null 2>&1; do
+ 		# HACK: it would be nice to `route monitor` here and wait for RTM_IFANNOUNCE
+ 		# but it turns out that the announcement is made before the interface
+ 		# disappears so we sometimes get a hang. So, we're instead left with polling
+@@ -186,21 +214,21 @@ up_if() {
+ }
+ 
+ up_if() {
+-	cmd ifconfig "$INTERFACE" up
++	cmd ifconfig -n "$INTERFACE" up
+ }
+ 
+ add_addr() {
+ 	if [[ $1 == *:* ]]; then
+-		cmd ifconfig "$INTERFACE" inet6 "$1" alias
++		cmd ifconfig -n "$INTERFACE" inet6 "$1" alias
+ 	else
+-		cmd ifconfig "$INTERFACE" inet "$1" alias
++		cmd ifconfig -n "$INTERFACE" inet "$1" alias
+ 	fi
+ }
+ 
+ set_mtu() {
+ 	local mtu=0 endpoint output family
+ 	if [[ -n $MTU ]]; then
+-		cmd ifconfig "$INTERFACE" mtu "$MTU"
++		cmd ifconfig -n "$INTERFACE" mtu "$MTU"
+ 		return
+ 	fi
+ 	while read -r _ endpoint; do
+@@ -208,14 +236,14 @@ set_mtu() {
+ 		family=inet
  		[[ ${BASH_REMATCH[1]} == *:* ]] && family=inet6
  		output="$(route -n get "-$family" "${BASH_REMATCH[1]}" || true)"
- 		[[ $output =~ interface:\ ([^ ]+)$'\n' && $(ifconfig "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
+-		[[ $output =~ interface:\ ([^ ]+)$'\n' && $(ifconfig "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
 -	done < <(wg show "$INTERFACE" endpoints)
++		[[ $output =~ interface:\ ([^ ]+)$'\n' && $(ifconfig -n "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
 +	done < <(awg show "$INTERFACE" endpoints)
  	if [[ $mtu -eq 0 ]]; then
  		read -r output < <(route -n get default || true) || true
- 		[[ $output =~ interface:\ ([^ ]+)$'\n' && $(ifconfig "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
+-		[[ $output =~ interface:\ ([^ ]+)$'\n' && $(ifconfig "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
++		[[ $output =~ interface:\ ([^ ]+)$'\n' && $(ifconfig -n "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
+ 	fi
+ 	[[ $mtu -gt 0 ]] || mtu=1500
+-	cmd ifconfig "$INTERFACE" mtu $(( mtu - 80 ))
++	cmd ifconfig -n "$INTERFACE" mtu $(( mtu - 80 ))
+ }
+ 
+ 
 @@ -242,7 +270,7 @@ collect_endpoints() {
  	while read -r _ endpoint; do
  		[[ $endpoint =~ ^\[?([a-z0-9:.]+)\]?:[0-9]+$ ]] || continue
@@ -127,7 +175,7 @@
  }
  
  set_endpoint_direct_route() {
-@@ -297,18 +325,18 @@ monitor_daemon() {
+@@ -297,25 +325,95 @@ monitor_daemon() {
  }
  
  monitor_daemon() {
@@ -145,10 +193,11 @@
  	# endpoints change.
  	while read -u 19 -r event; do
 -		[[ $event == RTM_* ]] || continue
- 		ifconfig "$INTERFACE" >/dev/null 2>&1 || break
+-		ifconfig "$INTERFACE" >/dev/null 2>&1 || break
++		ifconfig -n "$INTERFACE" >/dev/null 2>&1 || break
  		[[ $AUTO_ROUTE4 -eq 1 || $AUTO_ROUTE6 -eq 1 ]] && set_endpoint_direct_route
  		# TODO: set the mtu as well, but only if up
-@@ -316,6 +344,76 @@ monitor_daemon() {
+ 	done
  	kill $pid) & disown
  }
  
@@ -252,7 +301,7 @@
  	  of the following additions to the [Interface] section, which are handled
  	  by $PROGRAM:
  
-@@ -429,10 +527,24 @@ cmd_usage() {
+@@ -429,13 +527,27 @@ cmd_usage() {
  	  - SaveConfig: if set to \`true', the configuration is saved from the current
  	    state of the interface upon shutdown.
  
@@ -277,7 +326,11 @@
 +
  cmd_up() {
  	local i
- 	[[ -z $(ifconfig "$INTERFACE" 2>/dev/null) ]] || die "\`$INTERFACE' already exists"
+-	[[ -z $(ifconfig "$INTERFACE" 2>/dev/null) ]] || die "\`$INTERFACE' already exists"
++	[[ -z $(ifconfig -n "$INTERFACE" 2>/dev/null) ]] || die "\`$INTERFACE' already exists"
+ 	trap 'del_if; del_routes; clean_temp; exit' INT TERM EXIT
+ 	add_if
+ 	execute_hooks "${PRE_UP[@]}"
 @@ -446,26 +558,31 @@ cmd_up() {
  	set_mtu
  	up_if
