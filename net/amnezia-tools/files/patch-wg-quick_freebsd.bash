@@ -1,6 +1,6 @@
---- wg-quick/freebsd.bash.orig	2025-10-24 19:17:23 UTC
+--- wg-quick/freebsd.bash.orig	2025-10-24 22:34:40 UTC
 +++ wg-quick/freebsd.bash
-@@ -25,11 +25,20 @@ CONFIG_FILE=""
+@@ -25,11 +25,18 @@ CONFIG_FILE=""
  POST_DOWN=( )
  SAVE_CONFIG=0
  CONFIG_FILE=""
@@ -11,17 +11,15 @@
  PROGRAM="${0##*/}"
  ARGS=( "$@" )
  
- IS_ASESCURITY_ON=0
+ IS_AWG_ON=0
  
-+
 +declare -A ROUTES
 +declare -A ENDPOINTS_MAP
-+
 +
  cmd() {
  	echo "[#] $*" >&3
  	"$@"
-@@ -40,7 +49,7 @@ die() {
+@@ -40,7 +47,7 @@ die() {
  	exit 1
  }
  
@@ -30,7 +28,7 @@
  
  unset ORIGINAL_TMPDIR
  make_temp() {
-@@ -64,7 +73,7 @@ parse_options() {
+@@ -64,7 +71,7 @@ parse_options() {
  }
  
  parse_options() {
@@ -39,7 +37,7 @@
  	CONFIG_FILE="$1"
  	if [[ $CONFIG_FILE =~ ^[a-zA-Z0-9_=+.-]{1,15}$ ]]; then
  		for path in "${CONFIG_SEARCH_PATHS[@]}"; do
-@@ -82,7 +91,7 @@ parse_options() {
+@@ -82,7 +89,7 @@ parse_options() {
  		stripped="${line%%\#*}"
  		key="${stripped%%=*}"; key="${key##*([[:space:]])}"; key="${key%%*([[:space:]])}"
  		value="${stripped#*=}"; value="${value##*([[:space:]])}"; value="${value%%*([[:space:]])}"
@@ -48,7 +46,7 @@
  		[[ $key == "[Interface]" ]] && interface_section=1
  		if [[ $interface_section -eq 1 ]]; then
  			case "$key" in
-@@ -96,9 +105,14 @@ parse_options() {
+@@ -96,9 +103,14 @@ parse_options() {
  			PreDown) PRE_DOWN+=( "$value" ); continue ;;
  			PostUp) POST_UP+=( "$value" ); continue ;;
  			PostDown) POST_DOWN+=( "$value" ); continue ;;
@@ -63,9 +61,9 @@
  			Jc);&
  			Jmin);&
  			Jmax);&
-@@ -109,6 +123,17 @@ parse_options() {
- 			H3);&
- 			H4) IS_ASESCURITY_ON=1;;
+@@ -116,6 +128,17 @@ parse_options() {
+ 			I4);&
+ 			I5) IS_AWG_ON=1;;
  			esac
 +		else
 +			case "$key" in
@@ -81,12 +79,12 @@
  		fi
  		WG_CONFIG+="$line"$'\n'
  	done < "$CONFIG_FILE"
-@@ -129,19 +154,22 @@ add_if() {
+@@ -136,19 +159,21 @@ add_if() {
  
  add_if() {
  	local ret rc
 -	local cmd="ifconfig wg create name "$INTERFACE""
--	if [[ $IS_ASESCURITY_ON == 1 ]]; then
+-	if [[ $IS_AWG_ON == 1 ]]; then
 +	local cmd="ifconfig amn create name "$INTERFACE""
 +	if [[ $USERLAND == 1 ]]; then
  		cmd="amneziawg-go "$INTERFACE"";
@@ -96,7 +94,6 @@
 +	if [ -n "$DESCRIPTION" ]; then
 +		ret="$(cmd $cmd description "$DESCRIPTION" 2>&1 >/dev/null)" && return 0
 +	else
-+
 +		ret="$(cmd $cmd 2>&1 >/dev/null)" && return 0
  	fi
  	rc=$?
@@ -109,7 +106,7 @@
  	cmd "${WG_QUICK_USERSPACE_IMPLEMENTATION:-amneziawg-go}" "$INTERFACE"
  }
  
-@@ -174,9 +202,9 @@ del_if() {
+@@ -181,9 +206,9 @@ del_if() {
  	if [[ -S /var/run/amneziawg/$INTERFACE.sock ]]; then
  		cmd rm -f "/var/run/amneziawg/$INTERFACE.sock"
  	else
@@ -121,7 +118,7 @@
  		# HACK: it would be nice to `route monitor` here and wait for RTM_IFANNOUNCE
  		# but it turns out that the announcement is made before the interface
  		# disappears so we sometimes get a hang. So, we're instead left with polling
-@@ -186,21 +214,21 @@ up_if() {
+@@ -193,21 +218,21 @@ up_if() {
  }
  
  up_if() {
@@ -147,7 +144,7 @@
  		return
  	fi
  	while read -r _ endpoint; do
-@@ -208,14 +236,14 @@ set_mtu() {
+@@ -215,14 +240,14 @@ set_mtu() {
  		family=inet
  		[[ ${BASH_REMATCH[1]} == *:* ]] && family=inet6
  		output="$(route -n get "-$family" "${BASH_REMATCH[1]}" || true)"
@@ -166,7 +163,7 @@
  }
  
  
-@@ -242,7 +270,7 @@ collect_endpoints() {
+@@ -249,7 +274,7 @@ collect_endpoints() {
  	while read -r _ endpoint; do
  		[[ $endpoint =~ ^\[?([a-z0-9:.]+)\]?:[0-9]+$ ]] || continue
  		ENDPOINTS+=( "${BASH_REMATCH[1]}" )
@@ -175,7 +172,7 @@
  }
  
  set_endpoint_direct_route() {
-@@ -297,25 +325,95 @@ monitor_daemon() {
+@@ -304,25 +329,95 @@ monitor_daemon() {
  }
  
  monitor_daemon() {
@@ -274,7 +271,7 @@
  HAVE_SET_DNS=0
  set_dns() {
  	[[ ${#DNS[@]} -gt 0 ]] || return 0
-@@ -354,7 +452,7 @@ set_config() {
+@@ -361,7 +456,7 @@ set_config() {
  }
  
  set_config() {
@@ -283,7 +280,7 @@
  }
  
  save_config() {
-@@ -386,7 +484,7 @@ save_config() {
+@@ -393,7 +488,7 @@ save_config() {
  	done
  	old_umask="$(umask)"
  	umask 077
@@ -292,7 +289,7 @@
  	trap 'rm -f "$CONFIG_FILE.tmp"; clean_temp; exit' INT TERM EXIT
  	echo "${current_config/\[Interface\]$'\n'/$new_config}" > "$CONFIG_FILE.tmp" || die "Could not write configuration file"
  	sync "$CONFIG_FILE.tmp"
-@@ -412,7 +510,7 @@ cmd_usage() {
+@@ -419,7 +514,7 @@ cmd_usage() {
  	  followed by \`.conf'. Otherwise, INTERFACE is an interface name, with
  	  configuration found at:
  	  ${CONFIG_SEARCH_PATHS[@]/%//INTERFACE.conf}.
@@ -301,7 +298,7 @@
  	  of the following additions to the [Interface] section, which are handled
  	  by $PROGRAM:
  
-@@ -429,13 +527,27 @@ cmd_usage() {
+@@ -436,13 +531,27 @@ cmd_usage() {
  	  - SaveConfig: if set to \`true', the configuration is saved from the current
  	    state of the interface upon shutdown.
  
@@ -331,7 +328,7 @@
  	trap 'del_if; del_routes; clean_temp; exit' INT TERM EXIT
  	add_if
  	execute_hooks "${PRE_UP[@]}"
-@@ -446,26 +558,31 @@ cmd_up() {
+@@ -453,26 +562,31 @@ cmd_up() {
  	set_mtu
  	up_if
  	set_dns
@@ -366,7 +363,7 @@
  	save_config
  }
  
-@@ -473,6 +590,10 @@ cmd_strip() {
+@@ -480,6 +594,10 @@ cmd_strip() {
  	echo "$WG_CONFIG"
  }
  
@@ -377,7 +374,7 @@
  # ~~ function override insertion point ~~
  
  make_temp
-@@ -496,6 +617,10 @@ elif [[ $# -eq 2 && $1 == strip ]]; then
+@@ -503,6 +621,10 @@ elif [[ $# -eq 2 && $1 == strip ]]; then
  	auto_su
  	parse_options "$2"
  	cmd_strip

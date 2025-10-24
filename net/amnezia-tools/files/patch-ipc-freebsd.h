@@ -1,4 +1,4 @@
---- ipc-freebsd.h.orig	2024-10-01 13:02:42 UTC
+--- ipc-freebsd.h.orig	2025-09-03 14:11:13 UTC
 +++ ipc-freebsd.h
 @@ -15,13 +15,13 @@ static int get_dgram_socket(void)
  {
@@ -16,7 +16,7 @@
  	struct ifg_req *ifg;
  	int s = get_dgram_socket(), ret = 0;
  
-@@ -389,6 +389,8 @@ static int kernel_set_device(struct wgdevice *dev)
+@@ -502,6 +502,8 @@ static int kernel_set_device(struct wgdevice *dev)
  			nvl_aips[j] = nvlist_create(0);
  			if (!nvl_aips[j])
  				goto err_peer;
