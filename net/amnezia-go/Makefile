@@ -6,8 +6,8 @@ MASTER_SITES=	https://github.com/amnezia-vpn/amneziawg-go
 
 
 MAINTAINER=	vova@zote.me
-COMMENT=	WireGuard implementation in Go with Amnezia VPN non-detection extensions
-WWW=		https://www.wireguard.com
+COMMENT=	Amnezia implementation in Go with Amnezia VPN non-detection extensions
+WWW=		https://github.com/amnezia-vpn/amneziawg-go
 
 LICENSE=	MIT
 LICENSE_FILE=	${WRKSRC}/LICENSE
@@ -19,6 +19,9 @@ GH_ACCOUNT=	amnezia-vpn
 GH_PROJECT=	amneziawg-go
 GH_TAGNAME=	v0.2.16
 
-PLIST_FILES=	bin/${GH_PROJECT}
+PLIST_FILES=	bin/${PORTNAME}
+
+post-install:
+	${MV} ${STAGEDIR}${PREFIX}/bin/${GH_PROJECT} ${STAGEDIR}${PREFIX}/bin/${PORTNAME}
 
 .include <bsd.port.mk>
