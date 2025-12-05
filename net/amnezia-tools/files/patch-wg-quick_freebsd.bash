@@ -1,4 +1,4 @@
---- wg-quick/freebsd.bash.orig	2025-12-04 12:31:23 UTC
+--- wg-quick/freebsd.bash.orig	2025-12-05 20:18:11 UTC
 +++ wg-quick/freebsd.bash
 @@ -25,11 +25,18 @@ CONFIG_FILE=""
  POST_DOWN=( )
@@ -79,34 +79,45 @@
  		fi
  		WG_CONFIG+="$line"$'\n'
  	done < "$CONFIG_FILE"
-@@ -136,19 +159,21 @@ add_if() {
+@@ -136,20 +159,24 @@ add_if() {
  
  add_if() {
  	local ret rc
 -	local cmd="ifconfig wg create name "$INTERFACE""
 -	if [[ $IS_AWG_ON == 1 ]]; then
-+	local cmd="ifconfig amn create name "$INTERFACE""
-+	if [[ $USERLAND == 1 ]]; then
- 		cmd="amneziawg-go "$INTERFACE"";
- 	fi
+-		cmd="amneziawg-go "$INTERFACE"";
+-	fi
 -	if ret="$(cmd $cmd 2>&1 >/dev/null)"; then
 -		return 0
-+	if [ -n "$DESCRIPTION" ]; then
-+		ret="$(cmd $cmd description "$DESCRIPTION" 2>&1 >/dev/null)" && return 0
-+	else
-+		ret="$(cmd $cmd 2>&1 >/dev/null)" && return 0
- 	fi
- 	rc=$?
- 	if [[ $ret == *"ifconfig: ioctl SIOCSIFNAME (set name): File exists"* ]]; then
- 		echo "$ret" >&3
- 		return $rc
- 	fi
+-	fi
+-	rc=$?
+-	if [[ $ret == *"ifconfig: ioctl SIOCSIFNAME (set name): File exists"* ]]; then
+-		echo "$ret" >&3
+-		return $rc
+-	fi
 -	echo "[!] Missing WireGuard kernel support ($ret). Falling back to slow userspace implementation." >&3
++	local cmd="ifconfig amn create name "$INTERFACE""
++	if [[ $USERLAND == 0 ]]; then
++        if [ -n "$DESCRIPTION" ]; then
++            ret="$(cmd $cmd description "$DESCRIPTION" 2>&1 >/dev/null)" && return 0
++        else
++            ret="$(cmd $cmd 2>&1 >/dev/null)" && return 0
++        fi
++        rc=$?
++        if [[ $ret == *"ifconfig: ioctl SIOCSIFNAME (set name): File exists"* ]]; then
++            echo "$ret" >&3
++            return $rc
++        fi
++    fi
 +	echo "[!] Missing Amnezia kernel support ($ret). Falling back to slow userspace implementation." >&3
  	cmd "${WG_QUICK_USERSPACE_IMPLEMENTATION:-amneziawg-go}" "$INTERFACE"
++    if [ -n "$DESCRIPTION" ]; then
++        cmd ifconfig $INTERFACE description "$DESCRIPTION"
++    fi
  }
  
-@@ -181,9 +206,9 @@ del_if() {
+ del_routes() {
+@@ -181,9 +208,9 @@ del_if() {
  	if [[ -S /var/run/amneziawg/$INTERFACE.sock ]]; then
  		cmd rm -f "/var/run/amneziawg/$INTERFACE.sock"
  	else
@@ -118,7 +129,7 @@
  		# HACK: it would be nice to `route monitor` here and wait for RTM_IFANNOUNCE
  		# but it turns out that the announcement is made before the interface
  		# disappears so we sometimes get a hang. So, we're instead left with polling
-@@ -193,21 +218,21 @@ up_if() {
+@@ -193,21 +220,21 @@ up_if() {
  }
  
  up_if() {
@@ -144,7 +155,7 @@
  		return
  	fi
  	while read -r _ endpoint; do
-@@ -215,14 +240,14 @@ set_mtu() {
+@@ -215,14 +242,14 @@ set_mtu() {
  		family=inet
  		[[ ${BASH_REMATCH[1]} == *:* ]] && family=inet6
  		output="$(route -n get "-$family" "${BASH_REMATCH[1]}" || true)"
@@ -163,7 +174,7 @@
  }
  
  
-@@ -249,7 +274,7 @@ collect_endpoints() {
+@@ -249,7 +276,7 @@ collect_endpoints() {
  	while read -r _ endpoint; do
  		[[ $endpoint =~ ^\[?([a-z0-9:.]+)\]?:[0-9]+$ ]] || continue
  		ENDPOINTS+=( "${BASH_REMATCH[1]}" )
@@ -172,7 +183,7 @@
  }
  
  set_endpoint_direct_route() {
-@@ -304,25 +329,108 @@ monitor_daemon() {
+@@ -304,25 +331,108 @@ monitor_daemon() {
  }
  
  monitor_daemon() {
@@ -285,7 +296,7 @@
  HAVE_SET_DNS=0
  set_dns() {
  	[[ ${#DNS[@]} -gt 0 ]] || return 0
-@@ -361,7 +469,7 @@ set_config() {
+@@ -361,7 +471,7 @@ set_config() {
  }
  
  set_config() {
@@ -294,7 +305,7 @@
  }
  
  save_config() {
-@@ -393,7 +501,7 @@ save_config() {
+@@ -393,7 +503,7 @@ save_config() {
  	done
  	old_umask="$(umask)"
  	umask 077
@@ -303,7 +314,7 @@
  	trap 'rm -f "$CONFIG_FILE.tmp"; clean_temp; exit' INT TERM EXIT
  	echo "${current_config/\[Interface\]$'\n'/$new_config}" > "$CONFIG_FILE.tmp" || die "Could not write configuration file"
  	sync "$CONFIG_FILE.tmp"
-@@ -419,7 +527,7 @@ cmd_usage() {
+@@ -419,7 +529,7 @@ cmd_usage() {
  	  followed by \`.conf'. Otherwise, INTERFACE is an interface name, with
  	  configuration found at:
  	  ${CONFIG_SEARCH_PATHS[@]/%//INTERFACE.conf}.
@@ -312,7 +323,7 @@
  	  of the following additions to the [Interface] section, which are handled
  	  by $PROGRAM:
  
-@@ -436,13 +544,27 @@ cmd_usage() {
+@@ -436,13 +546,27 @@ cmd_usage() {
  	  - SaveConfig: if set to \`true', the configuration is saved from the current
  	    state of the interface upon shutdown.
  
@@ -342,7 +353,7 @@
  	trap 'del_if; del_routes; clean_temp; exit' INT TERM EXIT
  	add_if
  	execute_hooks "${PRE_UP[@]}"
-@@ -453,26 +575,31 @@ cmd_up() {
+@@ -453,26 +577,31 @@ cmd_up() {
  	set_mtu
  	up_if
  	set_dns
@@ -378,7 +389,7 @@
  	save_config
  }
  
-@@ -480,6 +607,10 @@ cmd_strip() {
+@@ -480,6 +609,10 @@ cmd_strip() {
  	echo "$WG_CONFIG"
  }
  
@@ -389,7 +400,7 @@
  # ~~ function override insertion point ~~
  
  make_temp
-@@ -503,6 +634,18 @@ elif [[ $# -eq 2 && $1 == strip ]]; then
+@@ -503,6 +636,18 @@ elif [[ $# -eq 2 && $1 == strip ]]; then
  	auto_su
  	parse_options "$2"
  	cmd_strip
