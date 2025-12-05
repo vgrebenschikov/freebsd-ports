@@ -1,3 +1,5 @@
-TIMESTAMP = 1764956151
-SHA256 (amnezia-vpn-amneziawg-go-0.2.16-v0.2.16_GH0.tar.gz) = 8327a22c7bcf4f6b05585d4b9536759c1e11fcc1e6830e5186fd55a14255eae1
-SIZE (amnezia-vpn-amneziawg-go-0.2.16-v0.2.16_GH0.tar.gz) = 123675
+TIMESTAMP = 1764964842
+SHA256 (go/net_amnezia-go/amnezia-go-0.2.16/v0.2.16.mod) = 80a5e495344779ddb7d7f72b5ad357487e2156cc268fb89e002afe63fb32a26c
+SIZE (go/net_amnezia-go/amnezia-go-0.2.16/v0.2.16.mod) = 641
+SHA256 (go/net_amnezia-go/amnezia-go-0.2.16/v0.2.16.zip) = a5b00adf59a433a03c43bf956998fd3eee5379f6574866f4e7d4c422650c59e3
+SIZE (go/net_amnezia-go/amnezia-go-0.2.16/v0.2.16.zip) = 181833
