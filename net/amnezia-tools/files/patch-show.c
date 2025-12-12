@@ -1,6 +1,6 @@
---- show.c.orig	2025-12-12 12:33:48.145954000 +0100
-+++ show.c	2025-12-12 12:32:50.349504000 +0100
-@@ -401,39 +401,39 @@
+--- show.c.orig	2025-09-03 14:11:13 UTC
++++ show.c
+@@ -401,39 +401,39 @@ static bool ugly_print(struct wgdevice *device, const 
  	 } else if (!strcmp(param, "h1")) {
  		if (with_interface)
  			printf("%s\t", device->name);
