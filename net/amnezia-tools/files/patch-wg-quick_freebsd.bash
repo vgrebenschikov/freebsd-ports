@@ -1,4 +1,4 @@
---- wg-quick/freebsd.bash.orig	2025-12-05 20:18:11 UTC
+--- wg-quick/freebsd.bash.orig	2025-12-12 22:28:42 UTC
 +++ wg-quick/freebsd.bash
 @@ -25,11 +25,18 @@ CONFIG_FILE=""
  POST_DOWN=( )
@@ -155,7 +155,7 @@
  		return
  	fi
  	while read -r _ endpoint; do
-@@ -215,14 +242,14 @@ set_mtu() {
+@@ -215,14 +242,16 @@ set_mtu() {
  		family=inet
  		[[ ${BASH_REMATCH[1]} == *:* ]] && family=inet6
  		output="$(route -n get "-$family" "${BASH_REMATCH[1]}" || true)"
@@ -168,13 +168,16 @@
 -		[[ $output =~ interface:\ ([^ ]+)$'\n' && $(ifconfig "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
 +		[[ $output =~ interface:\ ([^ ]+)$'\n' && $(ifconfig -n "${BASH_REMATCH[1]}") =~ mtu\ ([0-9]+) && ${BASH_REMATCH[1]} -gt $mtu ]] && mtu="${BASH_REMATCH[1]}"
  	fi
- 	[[ $mtu -gt 0 ]] || mtu=1500
+-	[[ $mtu -gt 0 ]] || mtu=1500
 -	cmd ifconfig "$INTERFACE" mtu $(( mtu - 80 ))
-+	cmd ifconfig -n "$INTERFACE" mtu $(( mtu - 80 ))
++	if [[ $mtu -gt 0 && $mtu -lt 1420 ]]; then
++        # setup MTU only if discovered MTU is less then default
++    	cmd ifconfig -n "$INTERFACE" mtu $(( mtu - 80 )) || true
++	fi
  }
  
  
-@@ -249,7 +276,7 @@ collect_endpoints() {
+@@ -249,7 +278,7 @@ collect_endpoints() {
  	while read -r _ endpoint; do
  		[[ $endpoint =~ ^\[?([a-z0-9:.]+)\]?:[0-9]+$ ]] || continue
  		ENDPOINTS+=( "${BASH_REMATCH[1]}" )
@@ -183,7 +186,7 @@
  }
  
  set_endpoint_direct_route() {
-@@ -304,25 +331,108 @@ monitor_daemon() {
+@@ -304,25 +333,108 @@ monitor_daemon() {
  }
  
  monitor_daemon() {
@@ -296,7 +299,7 @@
  HAVE_SET_DNS=0
  set_dns() {
  	[[ ${#DNS[@]} -gt 0 ]] || return 0
-@@ -361,7 +471,7 @@ set_config() {
+@@ -361,7 +473,7 @@ set_config() {
  }
  
  set_config() {
@@ -305,7 +308,7 @@
  }
  
  save_config() {
-@@ -393,7 +503,7 @@ save_config() {
+@@ -393,7 +505,7 @@ save_config() {
  	done
  	old_umask="$(umask)"
  	umask 077
@@ -314,7 +317,7 @@
  	trap 'rm -f "$CONFIG_FILE.tmp"; clean_temp; exit' INT TERM EXIT
  	echo "${current_config/\[Interface\]$'\n'/$new_config}" > "$CONFIG_FILE.tmp" || die "Could not write configuration file"
  	sync "$CONFIG_FILE.tmp"
-@@ -419,7 +529,7 @@ cmd_usage() {
+@@ -419,7 +531,7 @@ cmd_usage() {
  	  followed by \`.conf'. Otherwise, INTERFACE is an interface name, with
  	  configuration found at:
  	  ${CONFIG_SEARCH_PATHS[@]/%//INTERFACE.conf}.
@@ -323,7 +326,7 @@
  	  of the following additions to the [Interface] section, which are handled
  	  by $PROGRAM:
  
-@@ -436,13 +546,27 @@ cmd_usage() {
+@@ -436,13 +548,27 @@ cmd_usage() {
  	  - SaveConfig: if set to \`true', the configuration is saved from the current
  	    state of the interface upon shutdown.
  
@@ -353,7 +356,7 @@
  	trap 'del_if; del_routes; clean_temp; exit' INT TERM EXIT
  	add_if
  	execute_hooks "${PRE_UP[@]}"
-@@ -453,26 +577,31 @@ cmd_up() {
+@@ -453,26 +579,31 @@ cmd_up() {
  	set_mtu
  	up_if
  	set_dns
@@ -389,7 +392,7 @@
  	save_config
  }
  
-@@ -480,6 +609,10 @@ cmd_strip() {
+@@ -480,6 +611,10 @@ cmd_strip() {
  	echo "$WG_CONFIG"
  }
  
@@ -400,7 +403,7 @@
  # ~~ function override insertion point ~~
  
  make_temp
-@@ -503,6 +636,18 @@ elif [[ $# -eq 2 && $1 == strip ]]; then
+@@ -503,6 +638,18 @@ elif [[ $# -eq 2 && $1 == strip ]]; then
  	auto_su
  	parse_options "$2"
  	cmd_strip
