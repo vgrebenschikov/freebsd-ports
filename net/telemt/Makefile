@@ -1,0 +1,30 @@
+PORTNAME=	telemt
+DISTVERSION=	3.0.5
+CATEGORIES=	net
+
+MAINTAINER=	vova@zote.me
+COMMENT=	MTProxy for Telegram on Rust + Tokio
+WWW=		https://github.com/telemt/telemt
+
+LICENSE=	TELEMTUL1
+LICENSE_NAME=	TELEMT UL 1
+LICENSE_FILE=	${WRKSRC}/LICENSING.md
+LICENSE_PERMS=	dist-mirror dist-sell pkg-mirror pkg-sell auto-accept
+
+USES=	cargo
+
+USE_GITHUB=	yes
+GH_ACCOUNT=	telemt
+GH_PROJECT=	telemt
+USE_RC_SUBR=	${PORTNAME}
+
+.include "${.CURDIR}/Makefile.crates"
+
+PLIST_FILES=	bin/${PORTNAME} \
+		"@sample ${ETCDIR_REL}/config.toml.sample ${ETCDIR_REL}/config.toml"
+
+post-install:
+	@${MKDIR} ${STAGEDIR}${ETCDIR}
+	${INSTALL_DATA} ${FILESDIR}/config.toml.sample ${STAGEDIR}${ETCDIR}/config.toml.sample
+
+.include <bsd.port.mk>
