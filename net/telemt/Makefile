@@ -1,5 +1,5 @@
 PORTNAME=	telemt
-DISTVERSION=	3.0.12
+DISTVERSION=	3.0.15
 CATEGORIES=	net
 
 MAINTAINER=	vova@zote.me
@@ -25,6 +25,6 @@ PLIST_FILES=	bin/${PORTNAME} \
 
 post-install:
 	@${MKDIR} ${STAGEDIR}${ETCDIR}
-	${INSTALL_DATA} ${FILESDIR}/config.toml.sample ${STAGEDIR}${ETCDIR}/config.toml.sample
+	${INSTALL_DATA} ${WRKSRC}/config.toml ${STAGEDIR}${ETCDIR}/config.toml.sample
 
 .include <bsd.port.mk>
