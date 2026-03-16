@@ -14,55 +14,36 @@
 #       This is optional, however do not specifically set this to an
 #       empty string as this will cause the daemon to run as root.
 #       Default:  "nobody"
+#
+# telemt_group: The group account used to own files created by this script.
+#       Default:  "nobody"
 
 . /etc/rc.subr
 name=telemt
 rcvar=${name}_enable
 
 pidfile="/var/run/${name}.pid"
-pidfile_child="/var/run/${name}_child.pid"
 logfile="/var/log/${name}.log"
 
 load_rc_config ${name}
 : ${telemt_enable:="NO"}
 : ${telemt_config:="/usr/local/etc/telemt/config.toml"}
 : ${telemt_user:="nobody"}
+: ${telemt_group:="nobody"}
 
 command="/usr/sbin/daemon"
+procname="/usr/local/bin/telemt"
 
 start_precmd=${name}_prestart
 telemt_prestart() {
+  [ -f "${logfile}" ] \
+	|| install -m 664 -o "${telemt_user}" -g "${telemt_group}" -- /dev/null "${logfile}" \
+	|| return 1
 
-  install -m 664 -o ${telemt_user} -- /dev/null "${logfile}" && \
-  install -m 664 -o ${telemt_user} -- /dev/null "${pidfile}" && \
-  install -m 664 -o ${telemt_user} -- /dev/null "${pidfile_child}" \
-  || return 1
+  install -m 664 -o "${telemt_user}" -g "${telemt_group}" -- /dev/null "${pidfile}" \
+	|| return 1
 
-
-  cd /tmp
-  rc_flags="-f -o ${logfile} -P ${pidfile} -p ${pidfile_child} telemt ${telemt_config}"
-}
-
-start_postcmd=${name}_poststart
-telemt_poststart() {
-  sleep 1
-  run_rc_command status
-}
-
-status_cmd=${name}_status
-telemt_status() {
-  if [ -n "$rc_pid" ]; then
-    echo "${name} is running as pid $rc_pid."
-  else
-    echo "${name} is not running."
-    return 1
-  fi
-}
-
-stop_postcmd=${name}_postcmd
-telemt_postcmd() {
-    rm -f -- "${pidfile}"
-    rm -f -- "${pidfile_child}"
+  rc_flags="-c -f -o ${logfile} -p ${pidfile} ${procname} ${telemt_config}"
 }
 
 run_rc_command "$1"
