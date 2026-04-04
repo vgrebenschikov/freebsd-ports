@@ -11,12 +11,13 @@
 #		Default: /usr/local/etc/telemt/config.toml
 #
 # telemt_uid: The user account used to run the telemt daemon.
-#		This is optional, however do not specifically set this to an
-#		empty string as this will cause the daemon to run as root.
 #		Default:  "nobody"
 #
 # telemt_gid: The group account used to own files created by this script.
 #		Default:  "nobody"
+#
+# telemt_flags: Additional flags to pass to the telemt daemon.
+#		Default:  "--syslog"
 #
 
 . /etc/rc.subr
@@ -29,11 +30,12 @@ load_rc_config ${name}
 : ${telemt_config:="/usr/local/etc/telemt/config.toml"}
 : ${telemt_uid:="nobody"}
 : ${telemt_gid:="nobody"}
+: ${telemt_flags:="--syslog"}
 
 pidfile="/var/run/telemt/telemt.pid"
 
 command="/usr/local/bin/telemt"
-command_args="--daemon --syslog --pid-file ${pidfile} --run-as-user ${telemt_uid} --run-as-group ${telemt_gid} ${telemt_config}"
+command_args="--daemon --pid-file ${pidfile} --run-as-user ${telemt_uid} --run-as-group ${telemt_gid} ${telemt_flags} ${telemt_config}"
 
 start_precmd="${name}_prestart"
 reload_cmd="${name}_reload"
