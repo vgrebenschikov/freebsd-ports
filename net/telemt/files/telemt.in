@@ -1,49 +1,59 @@
 #!/bin/sh
 #
-# PROVIDE:
-# REQUIRE: LOGIN
+# PROVIDE: telemt
+# REQUIRE: LOGIN NETWORKING
 # KEYWORD: shutdown
 #
 # telemt_enable: Set to YES to enable the telemt service.
-#       Default: NO
+#		Default: NO
 #
 # telemt_config: Configuration file
-#	Default: /usr/local/etc/telemt/config.toml
+#		Default: /usr/local/etc/telemt/config.toml
 #
-# telemt_user: The user account used to run the telemt daemon.
-#       This is optional, however do not specifically set this to an
-#       empty string as this will cause the daemon to run as root.
-#       Default:  "nobody"
+# telemt_uid: The user account used to run the telemt daemon.
+#		This is optional, however do not specifically set this to an
+#		empty string as this will cause the daemon to run as root.
+#		Default:  "nobody"
 #
-# telemt_group: The group account used to own files created by this script.
-#       Default:  "nobody"
+# telemt_gid: The group account used to own files created by this script.
+#		Default:  "nobody"
+#
 
 . /etc/rc.subr
 name=telemt
 rcvar=${name}_enable
 
-pidfile="/var/run/${name}.pid"
-logfile="/var/log/${name}.log"
-
 load_rc_config ${name}
+
 : ${telemt_enable:="NO"}
 : ${telemt_config:="/usr/local/etc/telemt/config.toml"}
-: ${telemt_user:="nobody"}
-: ${telemt_group:="nobody"}
+: ${telemt_uid:="nobody"}
+: ${telemt_gid:="nobody"}
 
-command="/usr/sbin/daemon"
-procname="/usr/local/bin/telemt"
+pidfile="/var/run/telemt/telemt.pid"
 
-start_precmd=${name}_prestart
+command="/usr/local/bin/telemt"
+command_args="--daemon --syslog --pid-file ${pidfile} --run-as-user ${telemt_uid} --run-as-group ${telemt_gid} ${telemt_config}"
+
+start_precmd="${name}_prestart"
+reload_cmd="${name}_reload"
+extra_commands="reload"
+
 telemt_prestart() {
-  [ -f "${logfile}" ] \
-	|| install -m 664 -o "${telemt_user}" -g "${telemt_group}" -- /dev/null "${logfile}" \
-	|| return 1
+	pidfile_dir="$(dirname "${pidfile}")"
+	if ! [ -d "${pidfile_dir}" ]; then
+		install -d -m 755 -o "${telemt_uid}" -g "${telemt_gid}" "${pidfile_dir}"
+	fi
+}
 
-  install -m 664 -o "${telemt_user}" -g "${telemt_group}" -- /dev/null "${pidfile}" \
-	|| return 1
-
-  rc_flags="-c -f -o ${logfile} -p ${pidfile} ${procname} ${telemt_config}"
+telemt_reload() {
+    if [ -f "${pidfile}" ]; then
+        echo "Reloading ${name} configuration."
+        su -m "${telemt_uid}" -c "kill -HUP $(cat ${pidfile})"
+    else
+        echo "${name} is not running."
+        return 1
+    fi
 }
 
 run_rc_command "$1"
