@@ -35,7 +35,7 @@ load_rc_config ${name}
 pidfile="/var/run/telemt/telemt.pid"
 
 command="/usr/local/bin/telemt"
-command_args="--daemon --pid-file ${pidfile} --run-as-user ${telemt_uid} --run-as-group ${telemt_gid} ${telemt_flags} ${telemt_config}"
+command_args="--daemon --pid-file ${pidfile} --run-as-user ${telemt_uid} --run-as-group ${telemt_gid} ${telemt_config}"
 
 start_precmd="${name}_prestart"
 reload_cmd="${name}_reload"
