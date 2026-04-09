@@ -1,4 +1,4 @@
-TIMESTAMP = 1775421861
+TIMESTAMP = 1775740722
 SHA256 (rust/crates/aead-0.5.2.crate) = d122413f284cf2d62fb1b7db97e02edb8cda96d769b16e443a4f6195e35662b0
 SIZE (rust/crates/aead-0.5.2.crate) = 15509
 SHA256 (rust/crates/aes-0.8.4.crate) = b169f7a6d4742236a0a00c541b845991d0ac43e546831af1249753ab4c3aa3a0
@@ -821,5 +821,5 @@ SHA256 (rust/crates/zerovec-derive-0.11.3.crate) = 625dc425cab0dca6dc3c3319506e6
 SIZE (rust/crates/zerovec-derive-0.11.3.crate) = 22115
 SHA256 (rust/crates/zmij-1.0.21.crate) = b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa
 SIZE (rust/crates/zmij-1.0.21.crate) = 26665
-SHA256 (telemt-telemt-3.3.38_GH0.tar.gz) = 5635efd62fa689155d40413cd7a8a74804e03a2af218e72e4f230fa9c884a57c
-SIZE (telemt-telemt-3.3.38_GH0.tar.gz) = 2066914
+SHA256 (telemt-telemt-3.3.39_GH0.tar.gz) = 48a5e3c808c9f57690739b24feeb0842115437d7bdc19c6a1e1c7b0ace900dd6
+SIZE (telemt-telemt-3.3.39_GH0.tar.gz) = 2077319
