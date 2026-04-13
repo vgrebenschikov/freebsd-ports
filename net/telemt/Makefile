@@ -6,9 +6,9 @@ MAINTAINER=	vova@zote.me
 COMMENT=	MTProxy for Telegram on Rust + Tokio
 WWW=		https://github.com/telemt/telemt
 
-LICENSE=	TELEMTUL1
-LICENSE_NAME=	TELEMT UL 1
-LICENSE_FILE=	${WRKSRC}/LICENSING.md
+LICENSE=	TELEM_PL_3
+LICENSE_NAME=	TELEMT PL 3
+LICENSE_FILE=	${WRKSRC}/LICENSE
 LICENSE_PERMS=	dist-mirror dist-sell pkg-mirror pkg-sell auto-accept
 
 USES=	cargo
