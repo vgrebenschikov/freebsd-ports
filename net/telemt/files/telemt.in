@@ -38,7 +38,6 @@ command="/usr/local/bin/telemt"
 command_args="--daemon --pid-file ${pidfile} --run-as-user ${telemt_uid} --run-as-group ${telemt_gid} ${telemt_config}"
 
 start_precmd="${name}_prestart"
-reload_cmd="${name}_reload"
 extra_commands="reload"
 
 telemt_prestart() {
@@ -46,16 +45,6 @@ telemt_prestart() {
 	if ! [ -d "${pidfile_dir}" ]; then
 		install -d -m 755 -o "${telemt_uid}" -g "${telemt_gid}" "${pidfile_dir}"
 	fi
-}
-
-telemt_reload() {
-    if [ -f "${pidfile}" ]; then
-        echo "Reloading ${name} configuration."
-        su -m "${telemt_uid}" -c "kill -HUP $(cat ${pidfile})"
-    else
-        echo "${name} is not running."
-        return 1
-    fi
 }
 
 run_rc_command "$1"
