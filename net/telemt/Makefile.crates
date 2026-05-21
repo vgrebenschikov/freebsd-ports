@@ -243,7 +243,7 @@ CARGO_CRATES=	aead-0.5.2 \
 		rustls-pki-types-1.14.0 \
 		rustls-platform-verifier-0.6.2 \
 		rustls-platform-verifier-android-0.1.1 \
-		rustls-webpki-0.103.12 \
+		rustls-webpki-0.103.13 \
 		rustversion-1.0.22 \
 		rusty-fork-0.3.1 \
 		ryu-1.0.23 \
