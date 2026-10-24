@@ -1,0 +1,181 @@
+--- lib/ns/update.c.orig
++++ lib/ns/update.c
+@@ -1541,6 +1541,63 @@
+  * Miscellaneous subroutines.
+  */
+ 
++/*
++ * Scratch storage belongs to the caller: never modify the authenticated
++ * message or its shared name/RDATA storage. Length-preserving replacement
++ * also preserves DNS label boundaries and the configured zone suffix.
++ */
++typedef struct {
++	dns_fixedname_t owner;
++	unsigned char ptr[DNS_NAME_MAXWIRE];
++} update_fixname_t;
++
++static void
++fix_hostname_wire(unsigned char *wire, unsigned int length, bool wildcard) {
++	unsigned int pos = 0;
++
++	while (pos < length) {
++		unsigned int n = wire[pos++];
++		INSIST(n <= 63 && n <= length - pos);
++		if (wildcard && pos == 1 && n == 1 && wire[pos] == '*') {
++			pos += n;
++			continue;
++		}
++		for (unsigned int i = 0; i < n; i++) {
++			unsigned char c = wire[pos + i];
++			bool alnum = (c >= 'a' && c <= 'z') ||
++				     (c >= 'A' && c <= 'Z') ||
++				     (c >= '0' && c <= '9');
++			if (!alnum && (c != '-' || i == 0 || i == n - 1)) {
++				wire[pos + i] = (i == 0 || i == n - 1) ? 'x' : '-';
++			}
++		}
++		pos += n;
++	}
++}
++
++static void
++fix_update_rr(dns_zone_t *zone, dns_name_t **name, dns_rdata_t *rdata,
++	      update_fixname_t *scratch) {
++	dns_name_t *origin = dns_zone_getorigin(zone);
++	dns_name_t *owner;
++
++	if ((dns_zone_getoptions(zone) & DNS_ZONEOPT_UPDATEFIXNAMES) == 0 ||
++	    !dns_name_issubdomain(*name, origin))
++	{
++		return;
++	}
++	owner = dns_fixedname_initname(&scratch->owner);
++	dns_name_copy(*name, owner);
++	fix_hostname_wire(owner->ndata, owner->length - origin->length, true);
++	*name = owner;
++	if (rdata->type == dns_rdatatype_ptr && rdata->length != 0) {
++		INSIST(rdata->length <= sizeof(scratch->ptr));
++		memmove(scratch->ptr, rdata->data, rdata->length);
++		fix_hostname_wire(scratch->ptr, rdata->length, false);
++		rdata->data = scratch->ptr;
++	}
++}
++
+ /*%
+  * Extract a single update RR from 'section' of dynamic update message
+  * 'msg', with consistency checking.
+@@ -1725,6 +1782,7 @@
+ 	     result == ISC_R_SUCCESS; update++,
+ 	    result = dns_message_nextname(request, DNS_SECTION_UPDATE))
+ 	{
++		update_fixname_t fixscratch;
+ 		dns_name_t *name = NULL;
+ 		dns_rdata_t rdata = DNS_RDATA_INIT;
+ 		dns_ttl_t ttl;
+@@ -1734,6 +1792,7 @@
+ 
+ 		get_current_rr(request, DNS_SECTION_UPDATE, &name, &rdata,
+ 			       &covers, &ttl, &update_class);
++		fix_update_rr(zone, &name, &rdata, &fixscratch);
+ 
+ 		if (!dns_name_issubdomain(name, zonename)) {
+ 			FAILC(DNS_R_NOTZONE, "update RR is outside zone");
+@@ -2810,6 +2869,7 @@
+ 	     result == ISC_R_SUCCESS;
+ 	     result = dns_message_nextname(request, DNS_SECTION_PREREQUISITE))
+ 	{
++		update_fixname_t fixscratch;
+ 		dns_name_t *name = NULL;
+ 		dns_rdata_t rdata = DNS_RDATA_INIT;
+ 		dns_ttl_t ttl;
+@@ -2818,6 +2878,7 @@
+ 
+ 		get_current_rr(request, DNS_SECTION_PREREQUISITE, &name, &rdata,
+ 			       &covers, &ttl, &update_class);
++		fix_update_rr(zone, &name, &rdata, &fixscratch);
+ 
+ 		if (ttl != 0) {
+ 			PREREQFAILC(DNS_R_FORMERR,
+@@ -2934,6 +2995,7 @@
+ 	     result == ISC_R_SUCCESS; update++,
+ 	    result = dns_message_nextname(request, DNS_SECTION_UPDATE))
+ 	{
++		update_fixname_t fixscratch;
+ 		dns_name_t *name = NULL;
+ 		dns_rdata_t rdata = DNS_RDATA_INIT;
+ 		dns_ttl_t ttl;
+@@ -2944,6 +3006,7 @@
+ 
+ 		get_current_rr(request, DNS_SECTION_UPDATE, &name, &rdata,
+ 			       &covers, &ttl, &update_class);
++		fix_update_rr(zone, &name, &rdata, &fixscratch);
+ 
+ 		if (update_class == dns_rdataclass_in) {
+ 			/*
+--- lib/dns/include/dns/zone.h.orig
++++ lib/dns/include/dns/zone.h
+@@ -104,6 +104,7 @@
+ 	DNS_ZONEOPT_AUTOEMPTY = 1 << 29,      /*%< automatic empty zone */
+ 	DNS_ZONEOPT_CHECKSVCB = 1 << 30,      /*%< check SVBC records */
+ 	DNS_ZONEOPT_FORCEKEYMGR = 1ULL << 31, /*%< force keymgr step */
++	DNS_ZONEOPT_UPDATEFIXNAMES = 1ULL << 32, /* local DDNS normalization */
+ 	DNS_ZONEOPT___MAX = UINT64_MAX, /* trick to make the ENUM 64-bit wide */
+ } dns_zoneopt_t;
+ 
+--- lib/isccfg/namedconf.c.orig
++++ lib/isccfg/namedconf.c
+@@ -2549,6 +2549,7 @@
+  * legal.
+  */
+ static cfg_clausedef_t zone_only_clauses[] = {
++	{ "update-fix-names", &cfg_type_boolean, CFG_ZONE_PRIMARY },
+ 	/*
+ 	 * Note that the format of the check-names option is different between
+ 	 * the zone options and the global/view options.  Ugh.
+--- bin/named/zoneconf.c.orig
++++ bin/named/zoneconf.c
+@@ -1411,6 +1411,14 @@
+ 		INSIST(result == ISC_R_SUCCESS);
+ 		dns_zone_setrequestixfr(zone, cfg_obj_asboolean(obj));
+ 
++		/* Local option: deliberately zone-only and disabled by default. */
++		obj = NULL;
++		result = zoptions != NULL
++				 ? cfg_map_get(zoptions, "update-fix-names", &obj)
++				 : ISC_R_NOTFOUND;
++		dns_zone_setoption(mayberaw, DNS_ZONEOPT_UPDATEFIXNAMES,
++				   result == ISC_R_SUCCESS && cfg_obj_asboolean(obj));
++
+ 		obj = NULL;
+ 		checknames(ztype, maps, &obj);
+ 		INSIST(obj != NULL);
+--- doc/arm/reference.rst.orig
++++ doc/arm/reference.rst
+@@ -2614,6 +2614,27 @@
+    Response logging can also be activated at runtime using the
+    command ``rndc responselog on``, or deactivated with :option:`rndc
+    responselog off <rndc responselog>`.
++
++.. namedconf:statement:: update-fix-names
++   :tags: zone
++   :short: Normalizes hostname bytes in dynamic updates to a primary zone (local extension).
++
++   This local extension is disabled by default and is available only in
++   primary zone statements. When enabled, owner names below the zone apex
++   and PTR targets are normalized during dynamic update processing,
++   including prerequisites and deletions. Authorization uses the normalized
++   names. The original authenticated message is not modified.
++
++   ASCII letters, digits, and interior hyphens are retained. Other bytes
++   become hyphens inside labels or ``x`` at label boundaries. Label lengths
++   and case are preserved. The owner name's zone suffix and leading wildcard
++   label are retained. RDATA other than PTR targets is unchanged.
++
++   Enable this only in dedicated DHCP hostname zones: service labels such as
++   ``_sip._tcp`` would also be changed. Different input names can map to the
++   same output name; this option does not resolve collisions. Existing zone
++   data and queries are not normalized. Retain the usual update authorization
++   settings and enable this option in both forward and reverse zones.
+ 
+ .. namedconf:statement:: check-names
+    :tags: query, server
